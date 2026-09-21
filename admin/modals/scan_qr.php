@@ -1,86 +1,98 @@
 <?php
-// ------------------------------------------------------------
-// Fetch ALL events (active + upcoming + past)
-// Active events are highlighted in the dropdown.
-// ------------------------------------------------------------
+// ============================================================
+// Fetch events — filtered by role
+// ============================================================
 $today = date('Y-m-d');
+$isSuperAdmin = ($_SESSION['admin_role'] ?? 'super_admin') === 'super_admin';
+$adminId = (int)$_SESSION['admin'];
 
 try {
-    $stmt_modal = $conn->prepare("
-        SELECT id, event_name, start_date, end_date,
-               CASE 
-                   WHEN ? BETWEEN start_date AND end_date THEN 'active'
-                   WHEN start_date > ? THEN 'upcoming'
-                   ELSE 'past'
-               END AS status
-        FROM events
-        ORDER BY 
-            CASE 
-                WHEN ? BETWEEN start_date AND end_date THEN 1
-                WHEN start_date > ? THEN 2
-                ELSE 3
-            END,
-            start_date ASC
-    ");
-    $stmt_modal->execute([$today, $today, $today, $today]);
-    $events_for_modal = $stmt_modal->fetchAll(PDO::FETCH_ASSOC);
+    if ($isSuperAdmin) {
+        // Super admin sees all events
+        $stmt = $conn->prepare("
+            SELECT id, event_name, start_date, end_date,
+                   CASE 
+                       WHEN ? BETWEEN start_date AND end_date THEN 'active'
+                       WHEN start_date > ? THEN 'upcoming'
+                       ELSE 'past'
+                   END AS status
+            FROM events
+            ORDER BY 
+                CASE 
+                    WHEN ? BETWEEN start_date AND end_date THEN 1
+                    WHEN start_date > ? THEN 2
+                    ELSE 3
+                END,
+                start_date ASC
+        ");
+        $stmt->execute([$today, $today, $today, $today]);
+    } else {
+        // Facilitator sees only assigned events
+        $stmt = $conn->prepare("
+            SELECT e.id, e.event_name, e.start_date, e.end_date,
+                   CASE 
+                       WHEN ? BETWEEN e.start_date AND e.end_date THEN 'active'
+                       WHEN e.start_date > ? THEN 'upcoming'
+                       ELSE 'past'
+                   END AS status
+            FROM events e
+            JOIN event_facilitators ef ON ef.event_id = e.id
+            WHERE ef.admin_id = ?
+            ORDER BY 
+                CASE 
+                    WHEN ? BETWEEN e.start_date AND e.end_date THEN 1
+                    WHEN e.start_date > ? THEN 2
+                    ELSE 3
+                END,
+                e.start_date ASC
+        ");
+        $stmt->execute([$today, $today, $adminId, $today, $today]);
+    }
+
+    $events_for_modal = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     error_log('[scan_qr modal] ' . $e->getMessage());
     $events_for_modal = [];
     $modal_error = $e->getMessage();
 }
 ?>
-<style>
-  .modal-dialog{
-    width: 50vw;
-  }
-</style>
+
 <!-- Scan QR Modal -->
 <div class="modal fade" id="scanQrModal" tabindex="-1" aria-labelledby="scanQrModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-xl modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="scanQrModalLabel">📷 Scan QR Attendance</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
 
         <?php if (!empty($modal_error)): ?>
-          <div class="alert alert-danger">
-            <strong>Database error:</strong> <?= htmlspecialchars($modal_error) ?>
-          </div>
+          <div class="alert alert-danger"><strong>Database error:</strong> <?= htmlspecialchars($modal_error) ?></div>
         <?php endif; ?>
 
         <?php if (empty($events_for_modal)): ?>
           <div class="alert alert-warning">
-            <strong>No events found.</strong>
-            Go to <a href="events.php">Events</a> and create one first.
+            <strong>No events available.</strong><br>
+            <?php if ($isSuperAdmin): ?>
+              Go to <a href="events.php">Events</a> and create one first.
+            <?php else: ?>
+              You have no assigned events. Contact the Super Admin.
+            <?php endif; ?>
           </div>
         <?php else: ?>
-
           <div class="mb-3">
             <label class="form-label fw-bold">Select Event</label>
             <select id="scanEventSelect" class="form-select">
               <option value="">-- Choose an event to begin --</option>
               <?php foreach ($events_for_modal as $ev): 
-                  // Build the date label
                   if ($ev['start_date'] === $ev['end_date']) {
                       $dateLabel = date('M j, Y', strtotime($ev['start_date']));
                   } else {
-                      $dateLabel = date('M j', strtotime($ev['start_date'])) 
-                                 . ' – ' 
-                                 . date('M j, Y', strtotime($ev['end_date']));
+                      $dateLabel = date('M j', strtotime($ev['start_date'])) . ' – ' . date('M j, Y', strtotime($ev['end_date']));
                   }
-                  
-                  // Status prefix
-                  $prefix = '';
-                  if ($ev['status'] === 'active') {
-                      $prefix = 'ACTIVE · ';
-                  } elseif ($ev['status'] === 'upcoming') {
-                      $prefix = 'Upcoming · ';
-                  } else {
-                      $prefix = 'Past · ';
-                  }
+                  $prefix = $ev['status'] === 'active'   ? '🟢 ACTIVE · ' :
+                           ($ev['status'] === 'upcoming' ? '📅 Upcoming · ' : '⚪ Past · ');
               ?>
                 <option value="<?= $ev['id'] ?>">
                   <?= $prefix ?><?= htmlspecialchars($ev['event_name']) ?> — <?= $dateLabel ?>
@@ -101,12 +113,11 @@ try {
                     referrerpolicy="no-referrer-when-downgrade"
                     title="QR Scanner"></iframe>
           </div>
-
         <?php endif; ?>
 
       </div>
       <div class="modal-footer">
-        <small class="text-muted me-auto">Tip: Allow camera and location access when prompted.</small>
+        <small class="text-muted me-auto">💡 Tip: Allow camera and location access when prompted.</small>
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
       </div>
     </div>

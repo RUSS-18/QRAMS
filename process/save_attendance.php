@@ -1,4 +1,5 @@
 <?php
+session_start();
 include '../config/db.php';
 
 header('Content-Type: application/json');
@@ -9,6 +10,9 @@ $eventId = (int)($_POST['event_id'] ?? $_GET['event_id'] ?? 0);
 $latitude  = $_POST['latitude']  ?? null;
 $longitude = $_POST['longitude'] ?? null;
 $accuracy  = $_POST['accuracy']  ?? null;
+
+// Who is scanning? (the admin or facilitator logged in)
+$scannedBy = (int)($_SESSION['admin'] ?? 0) ?: null;
 
 if (!$userId || !$eventId) {
     echo json_encode(['status' => 'error', 'message' => 'Invalid QR code.']);
@@ -118,11 +122,11 @@ $existing = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$existing) {
     // ---------- CHECK-IN ----------
     $stmt = $conn->prepare("
-        INSERT INTO attendance (user_id, event_id, attendance_date, time_in,
+        INSERT INTO attendance (user_id, event_id, attendance_date, scanned_by, time_in,
                                 latitude, longitude, accuracy)
-        VALUES (?, ?, ?, NOW(), ?, ?, ?)
+        VALUES (?, ?, ?, ?, NOW(), ?, ?, ?)
     ");
-    $stmt->execute([$userId, $eventId, $today, $latitude, $longitude, $accuracy]);
+    $stmt->execute([$userId, $eventId, $today, $scannedBy, $latitude, $longitude, $accuracy]);
 
     echo json_encode([
         'status'      => 'check_in',

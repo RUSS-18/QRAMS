@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3308
--- Generation Time: Sep 18, 2026 at 10:08 AM
+-- Generation Time: Sep 21, 2026 at 04:49 AM
 -- Server version: 10.4.28-MariaDB
 -- PHP Version: 8.2.4
 
@@ -30,15 +30,19 @@ SET time_zone = "+00:00";
 CREATE TABLE `admins` (
   `id` int(11) NOT NULL,
   `username` varchar(50) NOT NULL,
-  `password` varchar(255) NOT NULL
+  `full_name` varchar(100) DEFAULT NULL,
+  `password` varchar(255) NOT NULL,
+  `role` varchar(20) NOT NULL DEFAULT 'facilitator',
+  `is_active` tinyint(1) NOT NULL DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `admins`
 --
 
-INSERT INTO `admins` (`id`, `username`, `password`) VALUES
-(1, 'admin', '$2y$10$ImNlAHZjtv6HaoRq03oIUeqfg0xTmXs.Ukt5f7QNR8FLLvZWIYe9u');
+INSERT INTO `admins` (`id`, `username`, `full_name`, `password`, `role`, `is_active`) VALUES
+(1, 'admin', 'System Admin', '$2y$10$ImNlAHZjtv6HaoRq03oIUeqfg0xTmXs.Ukt5f7QNR8FLLvZWIYe9u', 'super_admin', 1),
+(4, 'faci1', 'Gary Bautista', '$2y$12$ScNNE9DDO7QiwyEecgBs2OHJTJpdMdouXEguT3MnTvxOes9fM16fW', 'facilitator', 1);
 
 -- --------------------------------------------------------
 
@@ -51,6 +55,7 @@ CREATE TABLE `attendance` (
   `user_id` int(11) NOT NULL,
   `event_id` int(11) NOT NULL,
   `attendance_date` date NOT NULL,
+  `scanned_by` int(11) DEFAULT NULL,
   `latitude` decimal(10,8) DEFAULT NULL,
   `longitude` decimal(11,8) DEFAULT NULL,
   `accuracy` float DEFAULT NULL,
@@ -65,12 +70,12 @@ CREATE TABLE `attendance` (
 -- Dumping data for table `attendance`
 --
 
-INSERT INTO `attendance` (`id`, `user_id`, `event_id`, `attendance_date`, `latitude`, `longitude`, `accuracy`, `time_in`, `time_out`, `out_latitude`, `out_longitude`, `out_accuracy`) VALUES
-(4, 2, 9, '2026-09-14', 18.06089973, 121.59757232, 69.6667, '2026-09-14 11:39:35', NULL, NULL, NULL, NULL),
-(5, 4, 9, '2026-09-14', 18.06089973, 121.59757232, 69.6667, '2026-09-14 12:13:14', NULL, NULL, NULL, NULL),
-(6, 4, 9, '2026-09-18', 18.07739892, 121.60576347, 35, '2026-09-18 14:52:23', '2026-09-18 14:58:00', 18.07742553, 121.60571853, 39),
-(7, 5, 9, '2026-09-18', 18.07735624, 121.60566519, 41, '2026-09-18 15:06:39', '2026-09-18 15:06:44', 18.07738576, 121.60571836, 41),
-(8, 3, 9, '2026-09-18', 18.07743840, 121.60573562, 39, '2026-09-18 15:58:04', '2026-09-18 15:58:06', 18.07743840, 121.60573568, 39);
+INSERT INTO `attendance` (`id`, `user_id`, `event_id`, `attendance_date`, `scanned_by`, `latitude`, `longitude`, `accuracy`, `time_in`, `time_out`, `out_latitude`, `out_longitude`, `out_accuracy`) VALUES
+(4, 2, 9, '2026-09-14', NULL, 18.06089973, 121.59757232, 69.6667, '2026-09-14 11:39:35', NULL, NULL, NULL, NULL),
+(5, 4, 9, '2026-09-14', NULL, 18.06089973, 121.59757232, 69.6667, '2026-09-14 12:13:14', NULL, NULL, NULL, NULL),
+(6, 4, 9, '2026-09-18', NULL, 18.07739892, 121.60576347, 35, '2026-09-18 14:52:23', '2026-09-18 14:58:00', 18.07742553, 121.60571853, 39),
+(7, 5, 9, '2026-09-18', NULL, 18.07735624, 121.60566519, 41, '2026-09-18 15:06:39', '2026-09-18 15:06:44', 18.07738576, 121.60571836, 41),
+(8, 3, 9, '2026-09-18', NULL, 18.07743840, 121.60573562, 39, '2026-09-18 15:58:04', '2026-09-18 15:58:06', 18.07743840, 121.60573568, 39);
 
 -- --------------------------------------------------------
 
@@ -121,7 +126,28 @@ CREATE TABLE `events` (
 --
 
 INSERT INTO `events` (`id`, `event_name`, `start_date`, `end_date`, `allowed_departments`, `allowed_year_levels`, `venue_lat`, `venue_lng`, `radius_meters`, `signatory_name`, `signatory_signature`) VALUES
-(9, 'Intrams', '2026-09-16', '2026-09-20', '[]', '[]', 18.07739825, 121.60576315, 1000, 'Russel Guerrero', 'uploads/signatures/sig_event9_1789715460.png');
+(9, 'Intrams', '2026-09-16', '2026-09-20', '[]', '[]', 18.07739825, 121.60576315, 1000, 'Russel Guerrero', 'uploads/signatures/sig_event9_1789958770.png'),
+(10, 'General Assembly meeting', '2026-09-21', '2026-09-21', '[\"Other\"]', '[\"Faculty\"]', 18.07741928, 121.60575102, 100, NULL, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `event_facilitators`
+--
+
+CREATE TABLE `event_facilitators` (
+  `id` int(11) NOT NULL,
+  `event_id` int(11) NOT NULL,
+  `admin_id` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `event_facilitators`
+--
+
+INSERT INTO `event_facilitators` (`id`, `event_id`, `admin_id`) VALUES
+(3, 9, 4),
+(2, 10, 4);
 
 -- --------------------------------------------------------
 
@@ -190,7 +216,8 @@ ALTER TABLE `attendance`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `unique_daily_attendance` (`user_id`,`event_id`,`attendance_date`),
   ADD KEY `user_id` (`user_id`),
-  ADD KEY `event_id` (`event_id`);
+  ADD KEY `event_id` (`event_id`),
+  ADD KEY `attendance_admin_fk` (`scanned_by`);
 
 --
 -- Indexes for table `certificates_sent`
@@ -205,6 +232,14 @@ ALTER TABLE `certificates_sent`
 --
 ALTER TABLE `events`
   ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `event_facilitators`
+--
+ALTER TABLE `event_facilitators`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_assignment` (`event_id`,`admin_id`),
+  ADD KEY `ef_admin_fk` (`admin_id`);
 
 --
 -- Indexes for table `qr_sent`
@@ -227,7 +262,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `admins`
 --
 ALTER TABLE `admins`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `attendance`
@@ -245,7 +280,13 @@ ALTER TABLE `certificates_sent`
 -- AUTO_INCREMENT for table `events`
 --
 ALTER TABLE `events`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+
+--
+-- AUTO_INCREMENT for table `event_facilitators`
+--
+ALTER TABLE `event_facilitators`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `qr_sent`
@@ -267,6 +308,7 @@ ALTER TABLE `users`
 -- Constraints for table `attendance`
 --
 ALTER TABLE `attendance`
+  ADD CONSTRAINT `attendance_admin_fk` FOREIGN KEY (`scanned_by`) REFERENCES `admins` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `attendance_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `attendance_ibfk_2` FOREIGN KEY (`event_id`) REFERENCES `events` (`id`) ON DELETE CASCADE;
 
@@ -276,6 +318,13 @@ ALTER TABLE `attendance`
 ALTER TABLE `certificates_sent`
   ADD CONSTRAINT `cert_event_fk` FOREIGN KEY (`event_id`) REFERENCES `events` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `cert_user_fk` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `event_facilitators`
+--
+ALTER TABLE `event_facilitators`
+  ADD CONSTRAINT `ef_admin_fk` FOREIGN KEY (`admin_id`) REFERENCES `admins` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `ef_event_fk` FOREIGN KEY (`event_id`) REFERENCES `events` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `qr_sent`

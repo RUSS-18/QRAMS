@@ -59,9 +59,10 @@
                     <label>Department</label>
                     <select name="department" class="form-control">
                         <option value="">-- None --</option>
-                        <option>CICS</option><option>CBA</option><option>COE</option>
-                        <option>CON</option><option>CAS</option><option>CTE</option>
-                        <option>Other</option>
+                        <option>CICS</option>
+                        <option>CIT</option>
+                        <option>CTED</option>
+                        <option>ADMIN</option>
                     </select>
                 </div>
                 <div class="col-md-4 mb-3">
@@ -99,7 +100,8 @@
           <label class="fw-bold">Upload filled CSV</label>
           <input type="file" name="csv_file" class="form-control" accept=".csv,text/csv" required>
           <div class="alert alert-light border mt-3 mb-0 small">
-            <strong>Columns:</strong> <code>name, role, department, year_level, email</code>
+            <strong>Columns:</strong> <code>name, role, department, year_level, email</code><br>
+            <strong>Departments:</strong> <code>CICS, CIT, CTED, ADMIN</code>
           </div>
         </div>
         <div class="modal-footer">
@@ -142,7 +144,7 @@ $totalResults = count($users);
 $hasFilters   = ($q !== '' || $fRole !== '' || $fDept !== '' || $fYear !== '');
 
 $roles       = ['Student', 'Faculty', 'Guest'];
-$departments = ['CICS','CBA','COE','CON','CAS','CTE','Other'];
+$departments = ['CICS', 'CIT', 'CTED', 'ADMIN'];
 $yearLevels  = ['1st Year','2nd Year','3rd Year','4th Year','5th Year','Graduate','Faculty'];
 ?>
 
@@ -369,9 +371,6 @@ $yearLevels  = ['1st Year','2nd Year','3rd Year','4th Year','5th Year','Graduate
 </div>
 
 <script>
-// ============================================================
-// ELEMENT REFS
-// ============================================================
 const selectAllRows    = document.getElementById('selectAllRows');
 const sendAllQrBtn     = document.getElementById('sendAllQrBtn');
 const downloadQrZipBtn = document.getElementById('downloadQrZipBtn');
@@ -393,12 +392,10 @@ function updateBulkButtons() {
 }
 updateBulkButtons();
 
-// SELECT ALL
 selectAllRows.addEventListener('change', function () {
     document.querySelectorAll('.row-check:not(:disabled)').forEach(cb => cb.checked = this.checked);
 });
 
-// SEND ONE
 document.querySelectorAll('.send-qr-btn').forEach(btn => {
     btn.addEventListener('click', async function () {
         const userId = this.dataset.id;
@@ -436,7 +433,6 @@ document.querySelectorAll('.send-qr-btn').forEach(btn => {
     });
 });
 
-// BULK SEND
 sendAllQrBtn.addEventListener('click', async function () {
     const checked = Array.from(document.querySelectorAll('.row-check:checked')).map(cb => cb.dataset.id);
     const useChecked = checked.length > 0;
@@ -496,7 +492,6 @@ sendAllQrBtn.addEventListener('click', async function () {
     }
 });
 
-// DOWNLOAD ZIP
 downloadQrZipBtn.addEventListener('click', function () {
     const checked = Array.from(document.querySelectorAll('.row-check:checked')).map(cb => cb.dataset.id);
     const params = new URLSearchParams();
@@ -510,7 +505,6 @@ downloadQrZipBtn.addEventListener('click', function () {
     window.location.href = '../process/download_qr_zip.php?' + params.toString();
 });
 
-// QR PREVIEW MODAL
 document.addEventListener('DOMContentLoaded', function () {
     const qrModal     = document.getElementById('qrModal');
     const container   = document.getElementById('qrContainer');
